@@ -12,7 +12,18 @@
             <span class="toggle" :class="{ 'checked': isChecked }"></span>
           </div>
         </div>
-        <img class="example_backlog" :src="require('@/assets/images/fixed/example_backlog.png')" alt="example_backlog">
+        <v-card v-if="backlogList" class="commit-list-container">
+          <v-list style="background-color: #2f2f2f;">
+            <v-list-item v-for="(item, index) in backlogList" :key="index">
+              <v-card style="background-color: #444444;">
+                <v-card-item>
+                  <v-card-text style="color: white;">{{ item }}</v-card-text>
+                </v-card-item>
+              </v-card>
+            </v-list-item>
+          </v-list>
+        </v-card>
+        <!-- <img class="example_backlog" :src="require('@/assets/images/fixed/example_backlog.png')" alt="example_backlog"> -->
         <!-- <v-container>
             <v-divider></v-divider>
             <v-row>
@@ -34,7 +45,7 @@
               </v-col>
             </v-row>
           </v-container> -->
-          <div class="chat-bar">
+        <!-- <div class="chat-bar">
             <input type="email" placeholder="생성을 원하시는 Backlog를 입력해주세요!" v-model="email" />
             <a href="/" @click.prevent="handleSubmit">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
@@ -42,8 +53,8 @@
                   d="M15.6 15.47A4.99 4.99 0 0 1 7 12a5 5 0 0 1 10 0v1.5a1.5 1.5 0 1 0 3 0V12a8 8 0 1 0-4.94 7.4 1 1 0 1 1 .77 1.84A10 10 0 1 1 22 12v1.5a3.5 3.5 0 0 1-6.4 1.97zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
               </svg>
             </a>
-          </div>
-        </div>
+          </div> -->
+      </div>
       <div class="rightbox">
         <div class="rightbox_title">
           <span>Commit List</span>
@@ -57,7 +68,8 @@
               <option v-for="(item, index) in repos" :key="index" :value="item.value">{{ item.value }}</option>
             </v-select>
             <div v-if="branches">
-              <v-select v-model="selectedBranches" :value="selectedBranch" :items="branches" class="branch" @change="setBranchSelect($event)">
+              <v-select v-model="selectedBranches" :value="selectedBranch" :items="branches" class="branch"
+                @change="setBranchSelect($event)">
                 <option v-for="(item, index) in branches" :key="index" :value="item.value">{{ item.value }}</option>
               </v-select>
             </div>
@@ -69,13 +81,13 @@
             <v-select :value="selectedRepository"></v-select>
             <v-select :value="selectedBranches"></v-select>
           </div>
-          
+
           <v-card v-if="commits" class="commit-list-container">
-            <v-list>
+            <v-list style="background-color: #2f2f2f;">
               <v-list-item v-for="(item, index) in commits" :key="index">
-                <v-card>
+                <v-card style="background-color: #444444;">
                   <v-card-item>
-                    <v-card-text>{{ item }}</v-card-text>
+                    <v-card-text style="color: white;">{{ item }}</v-card-text>
                   </v-card-item>
                 </v-card>
               </v-list-item>
@@ -90,11 +102,13 @@
             <v-select :value="exampleBranch"></v-select>
           </div>
           <v-card v-if="exampleCommits" class="commit-list-container">
-            <v-list>
+            <v-list style="background-color: #2f2f2f;">
+              <!-- 카드 색상 -->
               <v-list-item v-for="(item, index) in exampleCommits" :key="index">
-                <v-card>
+                <v-card style="background-color: #444444;">
+                  <!-- 위는 카드 아래는 글씨 -->
                   <v-card-item>
-                    <v-card-text>{{ item }}</v-card-text>
+                    <v-card-text style="color: white;">{{ item }}</v-card-text>
                   </v-card-item>
                 </v-card>
               </v-list-item>
@@ -132,6 +146,7 @@ import axios from 'axios'
 import { toRaw } from 'vue';
 const productManageModule = 'productManageModule'
 const authenticationModule = 'authenticationModule'
+const backlogModule = 'backlogModule'
 
 export default {
   name: "App",
@@ -177,7 +192,8 @@ export default {
       exampleRepository: "noodle-frontend",
       exampleBranch: "develop",
       exampleCommits: [],
-      isExample: false
+      isExample: false,
+      backlogList: null,
     };
   },
   computed: {
@@ -201,6 +217,7 @@ export default {
   },
   methods: {
     ...mapActions(productManageModule, ["requestSaveReposListToDjango", "requestGetReposListToDjango", "requestSaveBranchListToDjango", "requestGetBranchListToDjango", "requestSaveCommitListToDjango", "requestGetCommitListToDjango"]),
+    ...mapActions(backlogModule, ["requestGenerateBacklogToFastAPI", "requestBacklogListToFastAPI"]),
     async setRepositorySelect(event) {
       const selectedValue = event
       // this.selectedBranches = selectedValue
@@ -230,7 +247,7 @@ export default {
     async example() {
       this.isExample = true;
       try {
-        const url = `https://api.github.com/repos/EDDI-RobotAcademy/noodle-frontend/commits?sha=develop`
+        const url = `https://api.github.com/repos/EDDI-RobotAcademy/noodle-backend/commits?sha=develop`
         const response = await axios.get(url)
         const data = response.data
         const proxyData = []
@@ -240,6 +257,17 @@ export default {
         }
         this.exampleCommits = toRaw(proxyData)
         console.log(this.exampleCommits)
+
+        const payload = { username: "EDDI-RobotAcademy", reponame: "noodle-backend", branchname: "develop" }
+        await this.requestGenerateBacklogToFastAPI(payload)
+        this.backlogList = await this.requestBacklogListToFastAPI()
+        if (this.backlogList == "아직 데이터를 처리 중이거나 요청한 데이터가 없습니다") {
+          this.backlogList = ["아직 데이터를 처리 중이거나 요청한 데이터가 없습니다"]
+        }
+
+        console.log("backlogList:", this.backlogList)
+        console.log("type:", this.backlogList.type)
+
       } catch (error) {
         console.error("Error fetching commits:", error)
       }
@@ -249,6 +277,7 @@ export default {
     if (localStorage.getItem('userToken')) {
       // 사용자 인증 과정 추가해야 함
     } else {
+      alert("로그인이 필요합니다. 로그인 페이지로 이동합니다.")
       this.goToGithubLogin()
     }
   }
@@ -367,7 +396,7 @@ body {
   /* 폰트 크기를 30px로 설정 */
 }
 
-.example_btn{
+.example_btn {
   background-color: rgba(204, 159, 1);
   padding: 5px 10px;
   border: none;

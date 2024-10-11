@@ -13,11 +13,7 @@
               <v-card-title class="survey-question">{{ question }}</v-card-title>
 
               <v-radio-group v-model="answers[index]" :name="`question-${index}`">
-                <v-radio
-                  v-for="(option, idx) in survey.answers[index]"
-                  :key="option"
-                  :label="option"
-                  :value="idx">
+                <v-radio v-for="(option, idx) in survey.answers[index]" :key="option" :label="option" :value="idx">
                   <template v-slot:label>
                     <span :class="{ 'selected-option': answers[index] === idx }">
                       {{ option }}
@@ -52,13 +48,14 @@ export default {
     return {
       surveyTitle: '', // 설문조사 이름
       answers: {}, // 사용자의 답안을 저장하는 객체
+      alreadyParticipated: localStorage.getItem('alreadyParticipated')
     };
   },
   computed: {
     ...mapState(surveyModule, ['survey']),
   },
   methods: {
-    ...mapActions(surveyModule, ['requestSurveyToDjango','requestCreateAnswerToDjango']),
+    ...mapActions(surveyModule, ['requestSurveyToDjango', 'requestCreateAnswerToDjango']),
     async submitSurvey() {
 
       const allAnswered = this.survey.questions.every((_, index) => this.answers[index] !== undefined);
@@ -72,12 +69,19 @@ export default {
       const payload = { "surveyId": this.surveyId, "answers": answers }
       console.log(answers)
       await this.requestCreateAnswerToDjango(payload)
-      await this.$router.push({name: 'ThankYouPage'})
+      await localStorage.setItem('alreadyParticipated', this.surveyId)
+      await this.$router.push({ name: 'ThankYouPage' })
     }
   },
-  async created () {
-    await this.requestSurveyToDjango(this.surveyId)
-  }
+  async mounted() {
+    if (this.alreadyParticipated == this.surveyId) {
+      alert("이미 설문에 참여하셨습니다")
+      this.$router.push("/")
+    }
+    else {
+      await this.requestSurveyToDjango(this.surveyId)
+    }
+  },
 };
 </script>
 
@@ -94,22 +98,29 @@ export default {
 .survey-container {
   background-color: #1c1c1c;
   min-height: 100vh;
-  padding: 150px 150px; /* 양쪽 끝에 150px 여백 추가 */
+  padding: 150px 150px;
+  /* 양쪽 끝에 150px 여백 추가 */
 }
 
 /* 설문 제목 스타일 - 노란색 */
 .survey-title {
-  color: rgb(234, 202, 16); /* 노란색 */
+  color: rgb(234, 202, 16);
+  /* 노란색 */
   font-weight: bold;
-  margin-bottom: 40px; /* 질문과의 간격을 더 넓히기 위해 40px 설정 */
-  margin-top: -100px; /* 제목을 위쪽으로 올리기 위해 음수 값 설정 */
+  margin-bottom: 40px;
+  /* 질문과의 간격을 더 넓히기 위해 40px 설정 */
+  margin-top: -100px;
+  /* 제목을 위쪽으로 올리기 위해 음수 값 설정 */
 }
 
 /* v-card를 검은색 배경으로 설정하고, 테두리를 노란색으로 변경 */
 .survey-card {
-  background-color: #1c1c1c; /* 카드 배경 검은색 */
-  color: rgba(204, 159, 1, 0.95); /* 카드 내 글씨도 노란색으로 */
-  border: 2px solid rgba(204, 159, 1, 0.95); /* 노란색 테두리 */
+  background-color: #1c1c1c;
+  /* 카드 배경 검은색 */
+  color: rgba(204, 159, 1, 0.95);
+  /* 카드 내 글씨도 노란색으로 */
+  border: 2px solid rgba(204, 159, 1, 0.95);
+  /* 노란색 테두리 */
   border-radius: 30px;
   padding: 30px;
 }
@@ -124,13 +135,11 @@ export default {
 .selected-option {
   font-weight: 900;
   color: rgb(255, 255, 255);
-  text-shadow: 0.5px 0.5px 1px rgba(0,0,0,0.1);
+  text-shadow: 0.5px 0.5px 1px rgba(0, 0, 0, 0.1);
   font-size: calc(1em + 2px);
 }
 
-.v-radio{
+.v-radio {
   color: #fff;
 }
-
-
 </style>

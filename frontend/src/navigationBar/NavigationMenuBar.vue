@@ -6,8 +6,8 @@
             </v-toolbar-title>
         </v-btn>
 
-    <v-toolbar-title class="temporarily">
-        Backlog Board 페이지 입니다.
+    <v-toolbar-title class="temporarily" >
+        Backlog Board
     </v-toolbar-title>
 
     <!-- 메뉴 이동 버튼 -->
